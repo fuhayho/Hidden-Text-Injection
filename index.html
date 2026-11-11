@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#090d14">
+  <title>Hidden Injection</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090d14;
+      --surface: #111823;
+      --surface-raised: #17212e;
+      --input: #0c121b;
+      --line: #263343;
+      --line-strong: #34465b;
+      --text: #eff4f8;
+      --muted: #a1afbd;
+      --subtle: #738294;
+      --accent: #80e0bd;
+      --accent-strong: #43c89a;
+      --accent-ink: #06251b;
+      --good: #8be0b2;
+      --bad: #ff9b9b;
+      --warning-bg: #28251d;
+      --warning: #f0cc84;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .26);
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f6f8;
+      --surface: #fff;
+      --surface-raised: #f7f9fa;
+      --input: #fff;
+      --line: #dce3e8;
+      --line-strong: #b9c7d0;
+      --text: #17232d;
+      --muted: #536575;
+      --subtle: #718391;
+      --accent: #087e62;
+      --accent-strong: #06694f;
+      --accent-ink: #fff;
+      --good: #087344;
+      --bad: #b4232d;
+      --warning-bg: #fff7e7;
+      --warning: #714d0c;
+      --shadow: 0 20px 55px rgba(30, 53, 68, .08);
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html {
+      min-width: 320px;
+      scroll-behavior: smooth
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      transition: background-color .2s ease, color .2s ease
+    }
+
+    button,
+    textarea,
+    select {
+      font: inherit
+    }
+
+    button {
+      touch-action: manipulation
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 50% -24%, rgba(74, 183, 149, .12), transparent 52%), var(--bg)
+    }
+
+    .topbar {
+      height: 72px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar-inner,
+    .wrap {
+      width: min(100% - 48px, 980px);
+      margin-inline: auto
+    }
+
+    .topbar-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 750;
+      letter-spacing: -.025em;
+      font-size: 16px
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+      border-radius: 11px
+    }
+
+    .brand-mark svg {
+      width: 20px;
+      height: 20px
+    }
+
+    .topbar-note {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 7px
+    }
+
+    .topbar-note svg {
+      width: 15px;
+      height: 15px;
+      color: var(--accent)
+    }
+
+    .theme-toggle {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: border-color .18s, background .18s
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--line-strong);
+      background: var(--surface-raised)
+    }
+
+    .theme-toggle svg {
+      width: 17px;
+      height: 17px;
+      color: var(--accent)
+    }
+
+    .wrap {
+      padding: 50px 0 64px
+    }
+
+    .hero {
+      margin: 0 0 27px
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 11px;
+      font-weight: 750;
+      margin-bottom: 12px
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 18px;
+      height: 1px;
+      background: currentColor
+    }
+
+    h1 {
+      font-size: clamp(30px, 4.5vw, 42px);
+      line-height: 1.12;
+      letter-spacing: -.045em;
+      margin: 0 0 12px;
+      font-weight: 760
+    }
+
+    .sub {
+      color: var(--muted);
+      margin: 0;
+      max-width: 680px;
+      font-size: 15px
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      margin: 16px 0;
+      box-shadow: var(--shadow)
+    }
+
+    .tool-panel {
+      padding: 0;
+      overflow: hidden
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 7px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-raised)
+    }
+
+    .tab {
+      flex: 1;
+      min-height: 46px;
+      padding: 10px 14px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background .18s, color .18s, border-color .18s
+    }
+
+    .tab:hover {
+      color: var(--text)
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--line);
+      box-shadow: 0 2px 7px rgba(0, 0, 0, .08)
+    }
+
+    .tool-content {
+      padding: 24px
+    }
+
+    label {
+      display: block;
+      font-weight: 650;
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: var(--text)
+    }
+
+    .field {
+      margin-bottom: 20px
+    }
+
+    .field-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px
+    }
+
+    .field-hint {
+      color: var(--subtle);
+      font-size: 12px
+    }
+
+    textarea,
+    select {
+      width: 100%;
+      background: var(--input);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 13px 14px;
+      transition: border-color .16s, box-shadow .16s;
+    }
+
+    textarea {
+      min-height: 118px;
+      resize: vertical;
+      font: 14px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace
+    }
+
+    textarea::placeholder {
+      color: var(--subtle);
+      opacity: .88
+    }
+
+    select {
+      min-height: 48px;
+      font-size: 14px;
+      cursor: pointer
+    }
+
+    textarea:hover,
+    select:hover {
+      border-color: var(--line-strong)
+    }
+
+    textarea:focus-visible,
+    select:focus-visible,
+    button:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 48%, transparent);
+      outline-offset: 2px;
+      border-color: var(--accent)
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px
+    }
+
+    .grid .field {
+      margin-bottom: 12px
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 13px;
+      margin: 8px 0 0
+    }
+
+    .actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      margin: 20px 0 22px
+    }
+
+    .btn {
+      min-height: 44px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      padding: 10px 15px;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 720;
+      cursor: pointer;
+      transition: transform .16s, background .16s, border-color .16s
+    }
+
+    .btn:hover {
+      background: var(--accent-strong)
+    }
+
+    .btn:active {
+      transform: translateY(1px)
+    }
+
+    .btn.secondary {
+      background: var(--surface-raised);
+      color: var(--text);
+      border-color: var(--line)
+    }
+
+    .btn.secondary:hover {
+      border-color: var(--line-strong);
+      background: color-mix(in srgb, var(--surface-raised) 70%, var(--accent) 8%)
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px
+    }
+
+    .output-label {
+      margin-top: 4px
+    }
+
+    .status {
+      min-height: 24px;
+      margin-top: 10px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      font-size: 13px
+    }
+
+    .good {
+      color: var(--good)
+    }
+
+    .bad {
+      color: var(--bad)
+    }
+
+    .section-title {
+      font-size: 15px;
+      margin: 0 0 13px;
+      letter-spacing: -.01em
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 16px
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      padding: 5px 10px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--surface-raised);
+      font-size: 12px;
+      font-weight: 600
+    }
+
+    .info-panel {
+      box-shadow: none
+    }
+
+    .info-panel p {
+      margin: 0 0 16px
+    }
+
+    .warning {
+      display: flex;
+      gap: 11px;
+      border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--line));
+      padding: 13px 14px;
+      background: var(--warning-bg);
+      color: var(--warning);
+      border-radius: 12px;
+      font-size: 13px
+    }
+
+    .warning svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 18px;
+      margin-top: 1px
+    }
+
+    .warning b {
+      color: var(--text)
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .footer-note {
+      color: var(--subtle);
+      font-size: 12px;
+      text-align: center;
+      margin: 20px 0 0
+    }
+
+    @media (max-width:640px) {
+      .topbar {
+        height: 64px
+      }
+
+      .topbar-inner,
+      .wrap {
+        width: min(100% - 32px, 980px)
+      }
+
+      .topbar-note {
+        display: none
+      }
+
+      .theme-toggle {
+        padding: 8px 10px
+      }
+
+      .wrap {
+        padding: 34px 0 44px
+      }
+
+      .hero {
+        margin-bottom: 22px
+      }
+
+      .panel {
+        border-radius: 15px;
+        padding: 18px
+      }
+
+      .tool-panel {
+        padding: 0
+      }
+
+      .tool-content {
+        padding: 18px
+      }
+
+      .tabs {
+        padding: 6px
+      }
+
+      .tab {
+        font-size: 12px;
+        padding: 8px 6px;
+        min-height: 48px
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+        gap: 0
+      }
+
+      .actions .btn {
+        flex: 1 1 calc(50% - 8px)
+      }
+    }
+
+    @media (max-width:380px) {
+      .brand {
+        font-size: 14px
+      }
+
+      .theme-label {
+        display: none
+      }
+
+      .theme-toggle {
+        width: 42px;
+        justify-content: center
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z" />
+              <path d="m8 10 4 2.2 4-2.2M12 12.2V17" />
+              <path d="M4.5 7.8 12 12l7.5-4.2" />
+            </svg></span>Hidden Text Injection</div>
+        <div class="topbar-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="5" y="10" width="14" height="11" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>Dữ liệu được xử lý ngay trên trình duyệt</div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Chuyển sang giao diện sáng"
+          aria-pressed="false"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
+          </svg><span class="theme-label" id="themeLabel">Giao diện sáng</span></button>
+      </div>
+    </header>
+    <main class="wrap">
+      <section class="hero" aria-labelledby="pageTitle">
+        <div class="eyebrow">Hidden text injection</div>
+        <h1 id="pageTitle">Hidden Prompt Injection - Demo</h1>
+        <p class="sub">Sử dụng phương pháp Zero-Width và Unicode Tag characters để ẩn thông điệp trong văn bản.</p>
+      </section>
+      <div class="panel tool-panel">
+        <div class="tabs" role="tablist" aria-label="Chức năng">
+          <button class="tab active" id="encTab" role="tab" aria-controls="encode" aria-selected="true">Encode/Edit</button>
+          <button class="tab" id="decTab" role="tab" aria-controls="decode" aria-selected="false">Decode/Clear</button>
+        </div>
+        <section class="tool-content" id="encode" role="tabpanel" aria-labelledby="encTab">
+          <div class="field">
+            <div class="field-head"><label for="cover">Văn bản hiển thị</label><span class="field-hint">Dùng khi chọn
+                thao tác gắn</span></div><textarea id="cover"
+              placeholder="Nhập hoặc dán văn bản bình thường..."></textarea>
+          </div>
+          <div class="field"><label for="secret">Thông điệp cần xử lý</label><textarea id="secret"
+              placeholder="Nhập nội dung thông điệp..."></textarea></div>
+          <div class="grid">
+            <div class="field"><label for="mode">Phương thức mã hóa</label><select id="mode">
+                <option value="tagutf8">Unicode Tag UTF-8 (hỗ trợ tiếng Việt)</option>
+                <option value="tagascii">Unicode Tag ASCII</option>
+                <option value="invisible">IAIM2 — zero-width có checksum</option>
+                <option value="compatible">Khối AI_CONTEXT dạng văn bản</option>
+              </select></div>
+            <div class="field"><label for="action">Thao tác</label><select id="action">
+                <option value="hide">Gắn vào cuối văn bản (hide)</option>
+                <option value="encode">Chỉ tạo chuỗi mã hóa (encode)</option>
+              </select></div>
+          </div>
+          <p class="small" id="modeHelp">UTF-8 mã hóa byte thành hex rồi chuyển từng ký tự hex sang Unicode Tag
+            characters.</p>
+          <div class="actions"><button class="btn" id="make" type="button"><svg viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M12 3v12m0 0 4-4m-4 4-4-4" />
+                <path d="M5 17v3h14v-3" />
+              </svg>Tạo kết quả</button><button class="btn secondary" id="copyOut" type="button">Sao chép kết
+              quả</button><button class="btn secondary" id="clear" type="button">Xóa nội dung</button></div>
+          <label class="output-label" for="output">Kết quả</label><textarea id="output"
+            placeholder="Kết quả sẽ xuất hiện ở đây..."></textarea>
+          <div class="status" id="encStatus" aria-live="polite"></div>
+        </section>
+        <section class="tool-content hidden" id="decode" role="tabpanel" aria-labelledby="decTab" aria-hidden="true">
+          <div class="field"><label for="inputEncoded">Văn bản cần kiểm tra</label><textarea id="inputEncoded"
+              placeholder="Dán văn bản có thể chứa thông điệp hoặc Unicode Tag..."></textarea></div>
+          <div class="grid">
+            <div class="field"><label for="decodeMode">Định dạng giải mã</label><select id="decodeMode">
+                <option value="auto">Tự nhận diện định dạng</option>
+                <option value="tagutf8">Unicode Tag UTF-8</option>
+                <option value="tagascii">Unicode Tag ASCII</option>
+                <option value="iaim">IAIM2 / AI_CONTEXT</option>
+              </select></div>
+            <div class="field"><label for="scanMode">Kiểu đọc khi quét</label><select id="scanMode">
+                <option value="utf8">Unicode Tag UTF-8 (mặc định)</option>
+                <option value="ascii">Unicode Tag ASCII</option>
+              </select></div>
+          </div>
+          <div class="actions"><button class="btn" id="read" type="button">Phát hiện và giải mã</button><button
+              class="btn secondary" id="scan" type="button">Quét ký tự ẩn</button><button class="btn secondary"
+              id="clean" type="button">Xóa Unicode Tag</button><button class="btn secondary" id="copySecret"
+              type="button">Sao chép thông điệp</button></div>
+          <label for="decoded">Thông điệp tìm thấy</label><textarea id="decoded"
+            placeholder="Thông điệp giải mã sẽ xuất hiện ở đây..."></textarea>
+          <div class="status" id="decStatus" aria-live="polite"></div>
+          <div class="field" style="margin-top:18px"><label for="cleaned">Văn bản sau khi xóa Tag
+              characters</label><textarea id="cleaned"
+              placeholder="Dùng nút ‘Xóa Unicode Tag’ để làm sạch văn bản..."></textarea></div>
+        </section>
+      </div>
+      <section class="panel info-panel" aria-labelledby="formatsTitle">
+        <h2 class="section-title" id="formatsTitle">Các định dạng được hỗ trợ</h2>
+        <div class="pills"><span class="pill">Unicode Tag UTF-8</span><span class="pill">Unicode Tag ASCII</span><span
+            class="pill">IAIM2</span><span class="pill">AI_CONTEXT</span><span class="pill">Quét</span><span
+            class="pill">Làm sạch</span></div>
+        <p class="small"><b>Unicode Tag UTF-8:</b> chuyển nội dung thành byte UTF-8, biểu diễn byte dưới dạng hex ASCII rồi
+          đổi từng ký tự thành Unicode Tag(U+E0000-U+E007F). <br> <b>ASCII:</b> đổi trực tiếp từng ký tự ASCII
+          sang Tag character tương ứng; ký tự ngoài ASCII sẽ báo lỗi. Hai chế độ này gắn payload ở cuối văn bản.</p>
+        <div class="warning"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3 2.8 19a1.3 1.3 0 0 0 1.1 2h16.2a1.3 1.3 0 0 0 1.1-2L12 3Z" />
+            <path d="M12 9v4m0 3h.01" />
+          </svg>
+          <div><b>Lưu ý:</b> Unicode Tag có thể bị ứng dụng khác loại bỏ hoặc không hiển thị. Thông điệp ẩn không phải
+            biện pháp bảo mật và không bảo đảm AI sẽ tự đọc được. Không dùng nội dung ẩn để ghi đè chỉ dẫn hệ thống,
+            chính sách an toàn hoặc quyền hạn của AI. Được sử dụng cho mục đích giáo dục, tôi không chịu bất kỳ trách nhiệm nếu cho mọi mục đích sử dụng sai trái.</div>
+        </div>
+      </section>
+      <p class="footer-note">Hidden Injection - Phương pháp chèn ký tự ẩn vào văn bản</p>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const TAG_BASE = 0xE0000, TAG_MIN = 0xE0000, TAG_MAX = 0xE007F;
+      const ZERO = '\u200B', ONE = '\u200C';
+      const START = '\u2063\u200B\u2063', END = '\u2063\u200C\u2063';
+      const COMPAT_START = '[AI_CONTEXT]', COMPAT_END = '[/AI_CONTEXT]';
+      const utf8Encoder = new TextEncoder();
+      function tagEncodeAscii(text) {
+        let out = '';
+        for (const ch of text) {
+          const cp = ch.codePointAt(0);
+          if (cp > 0x7F) throw Error(`Ký tự ${JSON.stringify(ch)} nằm ngoài ASCII.`);
+          out += String.fromCodePoint(TAG_BASE + cp);
+        }
+        return out;
+      }
+      function tagEncodeUtf8(text) {
+        return tagEncodeAscii(Array.from(utf8Encoder.encode(text), byte => byte.toString(16).padStart(2, '0')).join(''));
+      }
+      function tagText(text) {
+        return Array.from(text, ch => ch.codePointAt(0)).filter(cp => cp >= TAG_MIN && cp <= TAG_MAX).map(cp => String.fromCodePoint(cp - TAG_BASE)).join('');
+      }
+      function tagDecodeAscii(text) { return tagText(text) }
+      function tagDecodeUtf8(text) {
+        const raw = tagText(text);
+        if (/^(?:[\da-fA-F]{2})+$/.test(raw)) {
+          try { return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(raw.match(/../g), pair => parseInt(pair, 16))) } catch { }
+        }
+        return raw;
+      }
+      function hasTag(text) { return Array.from(text, ch => ch.codePointAt(0)).some(cp => cp >= TAG_MIN && cp <= TAG_MAX) }
+      function cleanTags(text) { return Array.from(text).filter(ch => { const cp = ch.codePointAt(0); return cp < TAG_MIN || cp > TAG_MAX }).join('') }
+      function checksum16(bytes) { let a = 1, b = 0; for (const byte of bytes) { a = (a + byte) % 65521; b = (b + a) % 65521 } return ((b << 16) | a) >>> 0 }
+      function encodePayload(text) {
+        const bytes = Array.from(utf8Encoder.encode(text));
+        const sum = checksum16(bytes);
+        const packet = [0x49, 0x41, 0x02, (bytes.length >>> 24) & 255, (bytes.length >>> 16) & 255, (bytes.length >>> 8) & 255, bytes.length & 255, ...bytes, (sum >>> 24) & 255, (sum >>> 16) & 255, (sum >>> 8) & 255, sum & 255];
+        return packet.map(byte => byte.toString(2).padStart(8, '0')).join('');
+      }
+      function decodePayload(bits) {
+        if (bits.length % 8) throw Error('Payload zero-width không đủ byte.');
+        const bytes = bits.match(/.{8}/g).map(byte => parseInt(byte, 2));
+        if (bytes.length < 11 || bytes[0] !== 0x49 || bytes[1] !== 0x41 || bytes[2] !== 0x02) throw Error('Payload không đúng định dạng IAIM2.');
+        const length = bytes[3] * 0x1000000 + bytes[4] * 0x10000 + bytes[5] * 0x100 + bytes[6];
+        if (length !== bytes.length - 11) throw Error('Độ dài payload IAIM2 không hợp lệ.');
+        const payload = bytes.slice(7, 7 + length), at = 7 + length;
+        const expected = (bytes[at] * 0x1000000 + bytes[at + 1] * 0x10000 + bytes[at + 2] * 0x100 + bytes[at + 3]) >>> 0;
+        if (checksum16(payload) !== expected) throw Error('Checksum IAIM2 không khớp; payload có thể đã bị thay đổi.');
+        return new TextDecoder('utf-8', { fatal: true }).decode(Uint8Array.from(payload));
+      }
+      function extractIAIM(s) { const start = s.lastIndexOf(START); if (start >= 0) { const end = s.indexOf(END, start + START.length); if (end < 0) throw Error('Thiếu dấu kết thúc của payload zero-width.'); let bits = ''; for (const c of s.slice(start + START.length, end)) { if (c === ZERO) bits += '0'; else if (c === ONE) bits += '1' } if (!bits) throw Error('Đã thấy dấu nhận diện nhưng không có payload.'); return decodePayload(bits) } const cs = s.lastIndexOf(COMPAT_START); if (cs >= 0) { const from = cs + COMPAT_START.length, ce = s.indexOf(COMPAT_END, from); if (ce < 0) throw Error('Thiếu dấu kết thúc của khối AI_CONTEXT.'); return s.slice(from, ce) } throw Error('Không tìm thấy định dạng IAIM2 hoặc AI_CONTEXT.') }
+      function setStatus(id, msg, kind) { $(id).textContent = msg; $(id).className = 'status ' + (kind || '') }
+      function setTheme(theme, persist = true) { const light = theme === 'light'; document.documentElement.dataset.theme = light ? 'light' : 'dark'; $('themeLabel').textContent = light ? 'Giao diện tối' : 'Giao diện sáng'; $('themeToggle').setAttribute('aria-label', light ? 'Chuyển sang giao diện tối' : 'Chuyển sang giao diện sáng'); $('themeToggle').setAttribute('aria-pressed', String(light)); $('themeIcon').innerHTML = light ? '<path d="M20.9 13A8.5 8.5 0 0 1 11 3.1 8.5 8.5 0 1 0 20.9 13Z"/>' : '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>'; document.querySelector('meta[name="theme-color"]').content = light ? '#f4f6f8' : '#090d14'; if (persist) { try { localStorage.setItem('tagtool-theme', light ? 'light' : 'dark') } catch { } } }
+      try { setTheme(localStorage.getItem('tagtool-theme') === 'light' ? 'light' : 'dark', false) } catch { setTheme('dark', false) }
+      $('themeToggle').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+      function tab(which) { const e = which === 'enc'; $('encode').classList.toggle('hidden', !e); $('decode').classList.toggle('hidden', e); $('encode').setAttribute('aria-hidden', String(!e)); $('decode').setAttribute('aria-hidden', String(e)); $('encTab').classList.toggle('active', e); $('decTab').classList.toggle('active', !e); $('encTab').setAttribute('aria-selected', String(e)); $('decTab').setAttribute('aria-selected', String(!e)) }
+      $('encTab').onclick = () => tab('enc'); $('decTab').onclick = () => tab('dec');
+      $('mode').onchange = () => { $('modeHelp').textContent = $('mode').value === 'tagutf8' ? 'UTF-8 mã hóa byte thành hex rồi chuyển từng ký tự hex sang Unicode Tag characters' : $('mode').value === 'tagascii' ? 'ASCII chuyển trực tiếp từng ký tự U+0000-U+007F sang Unicode Tag character; ký tự ngoài ASCII sẽ báo lỗi.' : 'Sử dụng phương pháp Zero-Width (U+200B và U+200C) để chèn vào văn bản, AI có thể không đọc được mà không mồi phương pháp chèn.' };
+      $('action').onchange = () => { $('cover').disabled = $('action').value === 'encode'; $('cover').style.opacity = $('cover').disabled ? '.55' : '1' };
+      $('make').onclick = () => { try { const c = $('cover').value, m = $('secret').value, mode = $('mode').value, action = $('action').value; if (!m) throw Error('Hãy nhập thông điệp cần xử lý.'); let result; if (mode === 'tagutf8') result = tagEncodeUtf8(m); else if (mode === 'tagascii') result = tagEncodeAscii(m); else if (mode === 'invisible') result = encodePayload(m).replace(/0/g, ZERO).replace(/1/g, ONE).replace(/^/, START).replace(/$/, END); else result = COMPAT_START + m + COMPAT_END; if (action === 'hide') result = c + result; $('output').value = result; setStatus('encStatus', action === 'hide' ? 'Đã gắn payload ở cuối văn bản.' : 'Đã tạo chuỗi mã hóa. ' + (mode === 'tagutf8' || mode === 'tagascii' ? 'Payload dùng Unicode Tag characters.' : ''), 'good') } catch (e) { setStatus('encStatus', e.message, 'bad') } };
+      $('copyOut').onclick = async () => { if (!$('output').value) return; try { await navigator.clipboard.writeText($('output').value); setStatus('encStatus', 'Đã sao chép kết quả.', 'good') } catch { $('output').focus(); $('output').select(); setStatus('encStatus', 'Không truy cập được clipboard; kết quả đã được chọn để sao chép thủ công.', 'bad') } };
+      $('clear').onclick = () => { ['cover', 'secret', 'output'].forEach(id => $(id).value = ''); setStatus('encStatus', '', '') };
+      function decodeTag(text, mode) { return mode === 'tagascii' ? tagDecodeAscii(text) : tagDecodeUtf8(text) }
+      $('read').onclick = () => { const s = $('inputEncoded').value, mode = $('decodeMode').value; try { let result; if (mode === 'tagutf8' || mode === 'tagascii') result = decodeTag(s, mode); else if (mode === 'iaim') result = extractIAIM(s); else { try { result = extractIAIM(s) } catch { if (!hasTag(s)) throw Error('Không tìm thấy thông điệp theo các định dạng hỗ trợ.'); result = tagDecodeUtf8(s) } } if (!result && hasTag(s) && mode === 'auto') result = tagDecodeAscii(s); $('decoded').value = result; setStatus('decStatus', hasTag(s) ? 'Đã xử lý văn bản có Unicode Tag characters.' : 'Đã giải mã thông điệp thành công.', 'good') } catch (e) { $('decoded').value = ''; setStatus('decStatus', e.message, 'bad') } };
+      $('scan').onclick = () => { const s = $('inputEncoded').value, found = hasTag(s), decoded = decodeTag(s, $('scanMode').value); $('decoded').value = decoded; setStatus('decStatus', found ? 'Có Unicode Tag characters.' + (decoded ? ' Thông điệp giải mã: ' + JSON.stringify(decoded) : ' Không có payload đọc được.') : 'Không tìm thấy Unicode Tag characters.', '' + (found ? 'good' : '')) };
+      $('clean').onclick = () => { const s = $('inputEncoded').value, n = Array.from(s, c => c.codePointAt(0)).filter(x => x >= TAG_MIN && x <= TAG_MAX).length; $('cleaned').value = cleanTags(s); setStatus('decStatus', n ? `Đã xóa ${n} Unicode Tag character.` : 'Không có Unicode Tag character để xóa.', n ? 'good' : '') };
+      $('copySecret').onclick = async () => { if (!$('decoded').value) return; try { await navigator.clipboard.writeText($('decoded').value); setStatus('decStatus', 'Đã sao chép thông điệp.', 'good') } catch { $('decoded').focus(); $('decoded').select(); setStatus('decStatus', 'Không truy cập được clipboard; nội dung đã được chọn để sao chép thủ công.', 'bad') } };
+    })();
+  </script>
+</body>
+
+</html>
